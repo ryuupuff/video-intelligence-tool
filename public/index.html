@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Intelligence Tool</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css" />
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+  </head>
+  <body>
+    <!-- Abstract Background -->
+    <div class="bg-abstract">
+      <div class="glow-orb orb-1"></div>
+      <div class="glow-orb orb-2"></div>
+      <div class="glow-orb orb-3"></div>
+      <div class="glass-overlay"></div>
+    </div>
+
+    <header class="topbar glass-nav">
+      <a class="brand" href="/" aria-label="Video Intelligence Tool home">
+        <div class="brand-mark">
+          <i data-lucide="zap"></i>
+        </div>
+        <span class="brand-text">Video Intelligence</span>
+      </a>
+      <!-- Dark mode toggle is mostly visual, as we default to dark -->
+      <button class="ghost-button icon-btn" id="themeToggle" type="button" aria-label="Toggle theme">
+        <i data-lucide="moon"></i>
+      </button>
+    </header>
+
+    <main>
+      <!-- Hero Split Section -->
+      <section class="hero-split">
+        <div class="hero-left">
+          <div class="badge fade-up" style="--delay: 0.1s">
+            <i data-lucide="sparkles" class="badge-icon"></i>
+            <span>Learn faster from long-form video</span>
+          </div>
+          
+          <h1 class="fade-up" style="--delay: 0.2s">
+            Turn YouTube into <span class="text-gradient">Structured Knowledge.</span>
+          </h1>
+          
+          <p class="lede fade-up" style="--delay: 0.3s">
+            Paste a link to extract insights, generate study notes, interactive quizzes, and key timeline clips in seconds.
+          </p>
+
+          <form id="summarizeForm" class="summarize-form fade-up" style="--delay: 0.4s">
+            <div class="input-wrapper">
+              <i data-lucide="youtube" class="input-icon"></i>
+              <input
+                id="youtubeUrl"
+                name="youtubeUrl"
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=..."
+                autocomplete="url"
+                required
+              />
+              <button class="primary-button spark-btn" type="submit">
+                <span>Generate</span>
+                <i data-lucide="arrow-right"></i>
+              </button>
+            </div>
+
+            <div class="controls-wrapper">
+              <div class="control-group">
+                <span class="control-label">Tone</span>
+                <div class="pill-group">
+                  <label class="pill-radio"><input type="radio" name="tone" value="formal" checked><span>Formal</span></label>
+                  <label class="pill-radio"><input type="radio" name="tone" value="casual"><span>Casual</span></label>
+                  <label class="pill-radio"><input type="radio" name="tone" value="simplified"><span>Simple</span></label>
+                  <label class="pill-radio"><input type="radio" name="tone" value="fun"><span>Fun</span></label>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <span class="control-label">Mode</span>
+                <div class="pill-group">
+                  <label class="pill-radio"><input type="radio" name="mode" value="study" checked><span>Study</span></label>
+                  <label class="pill-radio"><input type="radio" name="mode" value="quick"><span>Quick</span></label>
+                  <label class="pill-radio"><input type="radio" name="mode" value="entertainment"><span>Chill</span></label>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <div id="historyPanel" class="history-panel fade-up" style="--delay: 0.5s" hidden>
+            <div class="history-header">
+              <i data-lucide="history"></i>
+              <span>Recent</span>
+            </div>
+            <div id="historyList" class="history-list"></div>
+          </div>
+        </div>
+
+        <aside class="hero-right fade-in-scale" style="--delay: 0.6s">
+          <div class="glass-card visual-card float-anim-1">
+            <img src="https://images.unsplash.com/photo-1626544827763-d516dce335e2?q=80&w=1200&auto=format&fit=crop" alt="Abstract motion background" class="back-img" />
+            <div class="visual-gradient-overlay"></div>
+            
+            <div class="floating-stat float-anim-2">
+              <div class="stat-icon"><i data-lucide="clock"></i></div>
+              <div class="stat-info">
+                <strong>10x Faster</strong>
+                <span>Save hours of watch time</span>
+              </div>
+            </div>
+
+            <div class="floating-stat stat-bottom float-anim-3">
+              <div class="stat-icon"><i data-lucide="brain-circuit"></i></div>
+              <div class="stat-info">
+                <strong>Smart Insights</strong>
+                <span>Instant takeaways & quizzes</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- Advanced Placeholder / Loading State -->
+      <section id="loadingState" class="processing-state" hidden>
+        <div class="sticky-progress">
+          <div class="progress-info">
+            <span class="progress-status">Analyzing video structure...</span>
+            <span class="progress-percent">0%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill"></div>
+          </div>
+        </div>
+        <div class="skeleton-grid">
+          <div class="skeleton-card header-skeleton"></div>
+          <div class="skeleton-card grid-col-2"></div>
+          <div class="skeleton-card grid-col-2"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+      </section>
+
+      <!-- Error State -->
+      <section id="errorState" class="glass-card error-card fade-up" role="alert" hidden>
+        <div class="error-content">
+          <i data-lucide="alert-triangle"></i>
+          <span id="errorText"></span>
+        </div>
+        <button id="retryButton" class="ghost-button small-btn retry-btn" type="button">
+          <i data-lucide="refresh-cw"></i> Try Again
+        </button>
+      </section>
+
+      <!-- Output UI Section -->
+      <section id="results" class="results-container" hidden>
+        
+        <!-- Results Header -->
+        <div class="results-header glass-card scroll-reveal">
+          <div class="header-info">
+            <div class="badge green-badge">
+              <i data-lucide="check-circle-2"></i>
+              <span>Processing Complete</span>
+            </div>
+            <h2 id="resultTitle" class="title-display">Video Title</h2>
+            <div class="meta-row">
+              <p id="resultMeta" class="muted-text"></p>
+              <div class="difficulty-pill" id="difficulty">Beginner</div>
+            </div>
+            <p id="processingNote" class="processing-warning" hidden>
+              <i data-lucide="info"></i>
+              <span>Processed in segments due to length.</span>
+            </p>
+          </div>
+          <div class="actions-group">
+            <button class="ghost-button" id="copyAllButton" type="button">
+              <i data-lucide="copy"></i> Copy All
+            </button>
+            <button class="ghost-button" id="downloadTextButton" type="button">
+              <i data-lucide="download"></i> Text
+            </button>
+            <button class="ghost-button" id="downloadPdfButton" type="button">
+              <i data-lucide="printer"></i> PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="time-card scroll-reveal glow-card">
+          <div class="time-main">
+            <i data-lucide="timer" class="time-icon"></i>
+            <span id="timeSaved">You saved 0 minutes</span>
+          </div>
+          <div class="time-stats" id="timeBreakdown">0 min video → 0 min read</div>
+        </div>
+
+        <!-- Dynamic Output Grid -->
+        <div class="output-masonry">
+          
+          <article class="glass-card tile tile-span-2 scroll-reveal" id="thumbnailPanel" hidden>
+            <div class="img-wrapper">
+              <img id="videoThumbnail" alt="Video thumbnail" />
+            </div>
+          </article>
+
+          <article class="glass-card tile tile-span-2 scroll-reveal">
+            <div class="tile-header">
+              <i data-lucide="align-left"></i>
+              <h3>TL;DR</h3>
+            </div>
+            <p id="tldr" class="tldr-text type-anim"></p>
+          </article>
+
+          <article class="glass-card tile scroll-reveal">
+            <div class="tile-header">
+              <i data-lucide="list"></i>
+              <h3>Detailed Summary</h3>
+            </div>
+            <ul id="detailedSummary" class="custom-list"></ul>
+          </article>
+
+          <article class="glass-card tile scroll-reveal">
+            <div class="tile-header">
+              <i data-lucide="target"></i>
+              <h3>Key Takeaways</h3>
+            </div>
+            <ul id="keyTakeaways" class="custom-list icon-list"></ul>
+          </article>
+
+          <article class="glass-card tile tile-span-2 study-section scroll-reveal">
+            <div class="tile-header">
+              <i data-lucide="book-open"></i>
+              <h3>Auto Notes</h3>
+            </div>
+            <div class="notes-grid">
+              <div class="note-col">
+                <h4>Key Concepts</h4>
+                <ul id="noteConcepts" class="custom-list small-list"></ul>
+              </div>
+              <div class="note-col">
+                <h4>Definitions</h4>
+                <dl id="noteDefinitions" class="def-list"></dl>
+              </div>
+              <div class="note-col">
+                <h4>Examples</h4>
+                <ul id="noteExamples" class="custom-list small-list"></ul>
+              </div>
+            </div>
+          </article>
+
+          <article class="glass-card tile study-section scroll-reveal">
+            <div class="tile-header space-between">
+              <div class="left-head">
+                <i data-lucide="help-circle"></i>
+                <h3>Quiz</h3>
+              </div>
+              <button class="icon-btn-small" id="copyQuizButton" title="Copy Quiz">
+                <i data-lucide="copy"></i>
+              </button>
+            </div>
+            <div id="quizList" class="quiz-container"></div>
+          </article>
+
+          <article class="glass-card tile study-section scroll-reveal overflow-hidden">
+            <div class="tile-header space-between">
+              <div class="left-head">
+                <i data-lucide="layers"></i>
+                <h3>Flashcards</h3>
+              </div>
+              <button class="ghost-button small-btn" id="exportFlashcardsButton">
+                Export JSON
+              </button>
+            </div>
+            <!-- Swipeable Container -->
+            <div id="flashcards" class="flashcards-swipe"></div>
+          </article>
+
+          <article class="glass-card tile tile-span-2 scroll-reveal">
+            <div class="tile-header">
+              <i data-lucide="film"></i>
+              <h3>Highlight Clips</h3>
+            </div>
+            <div id="keyMoments" class="timeline"></div>
+          </article>
+
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

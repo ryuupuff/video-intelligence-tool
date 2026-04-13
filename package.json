@@ -1,0 +1,26 @@
+{
+  "name": "video-intelligence-tool",
+  "version": "1.0.0",
+  "description": "Full-stack AI-powered web app that turns YouTube videos into structured, actionable knowledge.",
+  "main": "server/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "keywords": [
+    "youtube",
+    "ai",
+    "summarizer",
+    "study-tools",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "youtube-transcript": "^1.3.0",
+    "ytdl-core": "^4.11.5"
+  }
+}
