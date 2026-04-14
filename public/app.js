@@ -5,8 +5,6 @@ const form = document.querySelector("#summarizeForm");
 const urlInput = document.querySelector("#youtubeUrl");
 const themeToggle = document.querySelector("#themeToggle");
 const loadingState = document.querySelector("#loadingState");
-const errorState = document.querySelector("#errorState");
-const errorText = document.querySelector("#errorText");
 const results = document.querySelector("#results");
 const processingNote = document.querySelector("#processingNote");
 const historyPanel = document.querySelector("#historyPanel");
@@ -29,10 +27,6 @@ setupScrollReveal();
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   await summarize();
-});
-
-document.querySelector("#retryButton").addEventListener("click", () => {
-  summarize();
 });
 
 themeToggle.addEventListener("click", () => {
@@ -113,75 +107,99 @@ async function summarize() {
   // Get values from custom radio pill groups
   const toneSelect = document.querySelector('input[name="tone"]:checked').value;
   const modeSelect = document.querySelector('input[name="mode"]:checked').value;
+  const urlValue = urlInput.value.trim();
+  const validUrlPattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]{11,}/i;
+
+  if (!urlValue || !validUrlPattern.test(urlValue)) {
+    showToast("Please enter a valid YouTube video URL", "error");
+    return;
+  }
 
   const payload = {
-    url: urlInput.value.trim(),
+    url: urlValue,
     tone: toneSelect,
     mode: modeSelect
   };
 
-  startLoadingSimulation();
-  hideError();
   processingNote.hidden = true;
   results.hidden = true;
   resetScrollReveals();
 
+  await handleGenerate(payload);
+}
+
+async function handleGenerate(payload) {
+  setLoading(true);
+
   try {
-    const response = await fetch("/summarize", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+    const response = await fetch('/summarize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
-    let data;
-    try {
-      data = await response.json();
-    } catch (jsonError) {
-      throw new Error("Invalid server response. Please try again.");
+    if (!response.ok) {
+      throw new Error('Request failed');
     }
 
-    if (!response.ok) {
-      throw new Error(data?.message || "Could not process this video.");
-    }
+    const data = await response.json();
 
     state.lastResult = data;
-    finishLoadingSimulation();
-    
-    // Simulate slight delay to let progress bar finish, then render
-    setTimeout(() => {
-      loadingState.hidden = true;
-      renderResult(data);
-      saveHistory(data);
-      renderHistory();
-    }, 600);
+    renderResult(data);
+    saveHistory(data);
+    renderHistory();
 
   } catch (err) {
-    stopLoadingSimulation();
-    
-    // Log the actual error to the console for debugging
-    console.error("API Request Failed:", err);
-    
-    // Map to user-friendly messages designed for the UI
-    const errorString = err.toString().toLowerCase();
-    let friendlyMessage = "Something went wrong, please try again";
-    
-    if (errorString.includes("failed to fetch") || errorString.includes("network error") || err.name === 'TypeError') {
-      friendlyMessage = "Unable to connect to server";
-    } else if (errorString.includes("transcript") || errorString.includes("caption")) {
-      friendlyMessage = "This video does not have captions";
-    } else if (err.message) {
-      if (err.message.toLowerCase().includes("could not process")) {
-        friendlyMessage = "Something went wrong, please try again";
-      } else {
-        friendlyMessage = err.message;
-      }
+    console.error(err);
+    showToast("Failed to fetch video", "error");
+    if (state.lastResult) {
+      renderResult(state.lastResult);
+      results.hidden = false;
     }
-
-    showError(friendlyMessage);
-    loadingState.hidden = true;
+  } finally {
+    setLoading(false);
   }
+}
+
+function showToast(message, type = "error") {
+  const container = document.querySelector("#toast-container");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = `toast toast--${type}`;
+
+  const icon = document.createElement("div");
+  icon.className = "toast__icon";
+  icon.innerHTML = type === "success"
+    ? '<i data-lucide="check-circle"></i>'
+    : type === "info"
+    ? '<i data-lucide="info"></i>'
+    : '<i data-lucide="alert-circle"></i>';
+
+  const text = document.createElement("div");
+  text.className = "toast__message";
+  text.textContent = message;
+
+  toast.append(icon, text);
+  container.appendChild(toast);
+  lucide.createIcons();
+
+  const timeoutId = setTimeout(() => {
+    toast.style.animation = "toastOut 0.3s ease-out forwards";
+    toast.addEventListener("animationend", () => toast.remove(), { once: true });
+  }, 3000);
+
+  toast.addEventListener("mouseenter", () => {
+    clearTimeout(timeoutId);
+    toast.style.animation = "none";
+  });
+
+  toast.addEventListener("mouseleave", () => {
+    setTimeout(() => {
+      toast.style.animation = "toastOut 0.3s ease-out forwards";
+      toast.addEventListener("animationend", () => toast.remove(), { once: true });
+    }, 500);
+  });
 }
 
 /* Loading Animations */
@@ -230,12 +248,22 @@ function finishLoadingSimulation() {
 
 function stopLoadingSimulation() {
   clearInterval(state.progressInterval);
+  loadingState.hidden = true;
   form.querySelector("button[type='submit']").disabled = false;
   form.querySelector("button[type='submit'] span").textContent = "Generate";
 }
 
+function setLoading(isLoading) {
+  if (isLoading) {
+    startLoadingSimulation();
+  } else {
+    stopLoadingSimulation();
+  }
+}
+
 /* Content Rendering */
 function renderResult(data) {
+  loadingState.hidden = true;
   document.body.classList.toggle("quick-mode", data.mode === "quick");
   
   document.querySelector("#resultTitle").textContent = data.title;
@@ -415,8 +443,16 @@ function renderThumbnail(data) {
     return;
   }
 
-  image.src = `https://img.youtube.com/vi/${data.videoId}/maxresdefault.jpg`;
-  panel.hidden = false;
+  try {
+    image.src = `https://img.youtube.com/vi/${data.videoId}/maxresdefault.jpg`;
+    image.onerror = () => {
+      panel.hidden = true;
+    };
+    panel.hidden = false;
+  } catch (err) {
+    console.error("Thumbnail render error:", err);
+    panel.hidden = true;
+  }
 }
 
 function saveHistory(data) {
@@ -507,19 +543,7 @@ function buildPlainText(data) {
   ].join("\n");
 }
 
-function showError(message) {
-  // Reset animation class to allow re-triggering the fade-up if shown multiple times
-  errorState.classList.remove("fade-up");
-  void errorState.offsetWidth; // trigger reflow
-  errorState.classList.add("fade-up");
-  
-  errorState.hidden = false;
-  errorText.textContent = message;
-  lucide.createIcons();
-}
-function hideError() {
-  errorState.hidden = true;
-}
+// setError is intentionally removed to keep the UI clean. Errors are logged only to the console.
 
 async function copyText(text) {
   await navigator.clipboard.writeText(text || "");

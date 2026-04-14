@@ -143,18 +143,8 @@
         </div>
       </section>
 
-      <!-- Error State -->
-      <section id="errorState" class="glass-card error-card fade-up" role="alert" hidden>
-        <div class="error-content">
-          <i data-lucide="alert-triangle"></i>
-          <span id="errorText"></span>
-        </div>
-        <button id="retryButton" class="ghost-button small-btn retry-btn" type="button">
-          <i data-lucide="refresh-cw"></i> Try Again
-        </button>
-      </section>
-
       <!-- Output UI Section -->
+      <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
       <section id="results" class="results-container" hidden>
         
         <!-- Results Header -->
